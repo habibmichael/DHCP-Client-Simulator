@@ -93,3 +93,109 @@ def generate_dhcp_release(ip,hw,server):
 	#Send the Release Packet
 	send(dhcp_rls_pkt,verbose=0)
 
+#Create User Menu
+try:
+    #Enter option for the first screen
+    while True:
+        print "\nUse this tool to:\ns - Simulate DHCP Clients\nr - Simulate DHCP Release\ne - Exit program\n"
+        
+        user_option_sim = raw_input("Enter your choice: ")
+        
+        if user_option_sim == "s":
+            print "\nObtained leases will be exported to 'DHCP_Leases.txt'!"
+            
+            pkt_no = raw_input("\nNumber of DHCP clients to simulate: ")
+            
+            pkt_inf = raw_input("Interface on which to send packets: ")
+            
+            print "\nWaiting for clients to obtain IP addresses...\n"
+            
+            try:
+                #Calling the function for the required number of times (pkt_no)
+                for iterate in range(0, int(pkt_no)):
+                    all_leased_ips = generate_dhcp_seq()[0]
+                      
+                
+            except IndexError:
+                print "No DHCP Server detected or connection is broken."
+                print "Check your network settings and try again.\n"
+                sys.exit()
+                
+            #List of all leased IPs
+            dhcp_leases = open("DHCP_Leases.txt", "w")
+            
+          
+            #Print each leased IP to the file
+            for index, each_ip in enumerate(all_leased_ips):
+                #Another way to write to file
+                print >>dhcp_leases, each_ip + "," + server_id[index] + "," + client_mac[index]
+                
+            dhcp_leases.close()
+            
+            continue
+
+        elif user_option_sim == "r":
+            while True:
+                print "\ns - Release a single address\na - Release all addresses\ne - Exit to the previous screen\n"
+                
+                user_option_release = raw_input("Enter your choice: ")
+                
+                if user_option_release == "s":
+                    print "\n"
+                    
+                    user_option_address = raw_input("Enter IP address to release: ")
+                  
+                    
+                    try:
+                        #Check if required IP is in the list and run the release function for it
+                        if user_option_address in all_leased_ips:
+                            index = all_leased_ips.index(user_option_address)
+
+                            generate_dhcp_release(user_option_address, client_mac[index], server_id[index])
+                            
+                            print "\nSending RELEASE packet...\n"
+                            
+                        else:
+                            print "IP Address not in list.\n"
+                            continue
+                    
+                    except (NameError, IndexError):
+                        print "\nSimulating DHCP RELEASES cannot be done separately, without prior DHCP Client simulation."
+                        print "Restart the program and simulate DHCP Clients and RELEASES in the same program session.\n"
+                        sys.exit()
+                
+                elif user_option_release == "a":
+     
+                    
+                    try:
+                        #Check if required IP is in the list and run the release function for it
+                        for user_option_address in all_leased_ips:
+                            
+                            index = all_leased_ips.index(user_option_address)
+
+                            generate_dhcp_release(user_option_address, client_mac[index], server_id[index])
+                            
+                    except (NameError, IndexError):
+                        print "\nSimulating DHCP RELEASES cannot be done separately, without prior DHCP Client simulation."
+                        print "Restart the program and simulate DHCP Clients and RELEASES in the same program session.\n"
+                        sys.exit()
+                    
+                    print "\nThe RELEASE packets have been sent.\n"
+                    
+                    #Erasing all leases from the file
+                    open("DHCP_Leases.txt", "w").close()
+                    
+                    print "File 'DHCP_Leases.txt' has been cleared."
+                    
+                    continue
+                
+                else:
+                    break
+            
+        else:
+            print "Exiting... See ya...\n\n"
+            sys.exit()
+
+except KeyboardInterrupt:
+    print "\n\nProgram aborted by user. Exiting...\n"
+    sys.exit()            
