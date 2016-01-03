@@ -80,4 +80,16 @@ def generate_dhcp_seq():
 
     return all_given_leases,server_id,client_mac
 
+#DHCP Release
+def generate_dhcp_release(ip,hw,server):
+
+	#Define DHCP Transaction ID
+	x_id=random.randrange(1,1000000)
+	hw_str=mac2str(hw)
+
+	#Create the Release Packet
+	dhcp_rls_pkt=IP(src=ip,dst=server)/UDP(sport=68,dport=67)/BOOTP(chaddr=hw_str,ciaddr=ip,xid=x_id)/DHCP(options=[("message-type","release"),("server_id",server),("end")])
+
+	#Send the Release Packet
+	send(dhcp_rls_pkt,verbose=0)
 
