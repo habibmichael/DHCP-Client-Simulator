@@ -31,4 +31,53 @@ print "\nInterface %s was set to PROMISC mode."%net_iface
 #Disable scapy ip check 
 conf.checkIPaddr=False
 
+#DHCP SEQUENCE
+all_given_leases=[]
+server_id=[]
+client_mac=[]
+
+
+#generate dhcp sequence
+def generate_dhcp_seq():
+	global all_given_leases
+
+	#Defining some DHCP parameters
+	x_id=random.randrange(1,1000000)
+	hw="00:00:5e"+str(RandMAC())[8:]
+	hw_str=mac2str(hw)
+
+
+    #Assigning the .command() output of a captured DHCP DISCOVER packet to a variable
+    dhcp_dis_pkt = Ether(dst="ff:ff:ff:ff:ff:ff", src=hw)/IP(src="0.0.0.0",dst="255.255.255.255") / UDP(sport=68,dport=67)/BOOTP(op=1, xid=x_id, chaddr=hw_str)/DHCP(options=[("message-type","discover"),("end")])
+    
+    #Sending the DISCOVER packet and catching the OFFER reply
+    #Generates two lists (answ and unansw). answd is a list containg a tuple: the first element is the DISCOVER packet, the second is the OFFER packet
+    answd, unanswd = srp(dhcp_dis_pkt, iface=pkt_inf, timeout = 2.5, verbose=0)
+
+    #Extract offered ip
+    offered_ip=answd[0][1][BOOTP].yiaddr
+
+     #Assigning the .command() output of a captured DHCP REQUEST packet to a variable
+    dhcp_req_pkt = Ether(dst="ff:ff:ff:ff:ff:ff", src=hw)/IP(src="0.0.0.0",dst="255.255.255.255") / UDP(sport=68,dport=67)/BOOTP(op=1, xid=x_id, chaddr=hw_str)/DHCP(options=[("message-type","request"),("requested_addr", offered_ip),("end")])
+    
+    #Sending the REQUEST for the offered IP address
+    #Capturing the ACK from the server
+    answr, unanswr = srp(dhcp_req_pkt, iface=pkt_inf, timeout = 2.5, verbose=0)   
+
+    #Extract offered ip (acknowledgment)
+    offred_ip_ack=answdr[0][1][BOOTP].yiaddr
+
+    #DHCP server IP/ID
+    server_ip=answr[0][1][IP].src
+
+    #Add each leased ip to list of leases
+    all_given_leases.append(offred_ip_ack)
+
+    #Add server ip to list
+    server_id.append(server_ip)
+
+    client_mac.append(hw)
+
+    return all_given_leases,server_id,client_mac
+
 
